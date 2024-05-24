@@ -99,7 +99,7 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
             {
                 return Result<string>.Failure("Invalid Microservice");
             }
-            var route = new AddMicroServiceDto(microservice.BaseUrl, microservice.MicroServiceName);
+            var route = new AddMicroServiceDto(microservice.BaseUrl, microservice.MicroServiceName,request.isApiApended);
             AddRoute(route, request.ControllerName);
 
             return Result<string>.Success("Success");
@@ -117,6 +117,9 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
         string jsonFilePath = $"{Directory.GetCurrentDirectory()}/Yarp.json";
         string jsonText = File.ReadAllText(jsonFilePath);
 
+        string appendApi = request.isApiApended ? "/api" : string.Empty;
+        string patternApiAppended = request.isApiApended ? "api/" : string.Empty;
+
         string pathName = request.ApplicationName;
 
         if (!string.IsNullOrEmpty(controllerName))
@@ -133,11 +136,11 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
           ""ClusterId"": ""{request.ApplicationName.ToLower()}"",
           ""RateLimiterPolicy"": ""fixed"",
           ""Match"": {{
-            ""Path"": ""/api/{pathName.ToLower()}/{{**catch-all}}""
+            ""Path"": ""{appendApi}/{pathName.ToLower()}/{{**catch-all}}""
           }},
           ""Transforms"": [
             {{
-              ""PathPattern"": ""/api/{pathName.ToLower()}/{{**catch-all}}""
+              ""PathPattern"": ""{patternApiAppended}{pathName.ToLower()}/{{**catch-all}}""
             }}
           ]
         }}";
