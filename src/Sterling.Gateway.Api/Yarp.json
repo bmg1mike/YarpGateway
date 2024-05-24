@@ -1,0 +1,27 @@
+{
+  "ReverseProxy": {
+    "Routes": {
+      "Users": {
+        "ClusterId": "users",
+        "RateLimiterPolicy": "fixed",
+        "Match": {
+          "Path": "/users/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathPattern": "users/{**catch-all}"
+          }
+        ]
+      }
+    },
+    "Clusters": {
+      "users": {
+        "Destinations": {
+          "cluster1/destination1": {
+            "Address": "https://jsonplaceholder.typicode.com"
+          }
+        }
+      }
+    }
+  }
+}
