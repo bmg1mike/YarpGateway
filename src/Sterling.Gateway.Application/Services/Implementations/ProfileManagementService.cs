@@ -38,6 +38,11 @@ public class ProfileManagementService(UserManager<GatewayApplication> userManage
                 return Result<string>.Success("User created successfully");
             }
 
+            foreach (var item in createUser.Errors)
+            {
+                logger.LogError($"Create Application Error {item.Description}");
+            }
+
             return Result<string>.Failure("There was a problem creating this user, please try again later");
         }
         catch (Exception ex)
