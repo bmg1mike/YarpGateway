@@ -12,30 +12,6 @@
             "PathPattern": "users/{**catch-all}"
           }
         ]
-      },
-      "accountOpening": {
-        "ClusterId": "accountopening",
-        "RateLimiterPolicy": "fixed",
-        "Match": {
-          "Path": "/api/accountopening/{**catch-all}"
-        },
-        "Transforms": [
-          {
-            "PathPattern": "/api/accountopening/{**catch-all}"
-          }
-        ]
-      },
-      "Utility": {
-        "ClusterId": "accountopening",
-        "RateLimiterPolicy": "fixed",
-        "Match": {
-          "Path": "/api/utility/{**catch-all}"
-        },
-        "Transforms": [
-          {
-            "PathPattern": "/api/utility/{**catch-all}"
-          }
-        ]
       }
     },
     "Clusters": {
@@ -43,13 +19,6 @@
         "Destinations": {
           "cluster1/destination1": {
             "Address": "https://jsonplaceholder.typicode.com"
-          }
-        }
-      },
-      "accountopening": {
-        "Destinations": {
-          "accountopeningApi": {
-            "Address": "https://localhost:7085"
           }
         }
       }
