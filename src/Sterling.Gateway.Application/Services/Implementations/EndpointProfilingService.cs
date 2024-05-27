@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Sterling.Gateway.Data;
@@ -16,15 +17,16 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
     {
         try
         {
-            AddRoute(request);
-            AddCluster(request);
-            var microservice = new MicroService
+            // AddRoute(request);
+            // AddCluster(request);
+
+            var cluster = new ClusterConfigEntity
             {
-                MicroServiceName = request.ApplicationName,
-                BaseUrl = request.ApplicationBaseUrl
+                ClusterId = request.ApplicationName.ToLower().Trim(),
+                DestinationAddress = request.ApplicationBaseUrl
             };
 
-            await context.MicroServices.AddAsync(microservice);
+            await context.ClusterConfigs.AddAsync(cluster);
             if (await context.SaveChangesAsync() > 0)
             {
                 return Result<string>.Success("MicroService has been added successfully");
@@ -94,15 +96,30 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
     {
         try
         {
-            var microservice = await context.MicroServices.FindAsync(request.MicroserviceId);
-            if (microservice == null)
+            string appendApi = request.isApiApended ? "/api" : string.Empty;
+            string patternApiAppended = request.isApiApended ? "api/" : string.Empty;
+
+            var cluster = await context.ClusterConfigs.FindAsync(request.MicroserviceId);
+            if (cluster == null)
             {
                 return Result<string>.Failure("Invalid Microservice");
             }
-            var route = new AddMicroServiceDto(microservice.BaseUrl, microservice.MicroServiceName,request.isApiApended);
-            AddRoute(route, request.ControllerName);
 
-            return Result<string>.Success("Success");
+            var route = new RouteConfigEntity
+            {
+                ClusterId = cluster.ClusterId,
+                Path = $"{appendApi}/{request.ControllerName.ToLower()}/{{**catch-all}}",
+                RouteId = request.ControllerName.ToLower(),
+                AuthorizationPolicy = "GeneralService"
+            };
+            await context.RouteConfigs.AddAsync(route);
+
+            if (await context.SaveChangesAsync() > 0)
+            { 
+                return Result<string>.Success("Controller has been added successfully");
+            }
+
+            return Result<string>.Failure("There was a problem adding Controller To Microservice, please try again later");
         }
         catch (System.Exception ex)
         {

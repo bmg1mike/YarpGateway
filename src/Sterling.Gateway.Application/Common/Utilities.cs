@@ -17,7 +17,8 @@ public static class Utilities
         {
             new Claim(ClaimTypes.NameIdentifier,user.Id),
             new Claim(ClaimTypes.Email,user.Email!),
-            new Claim("Type", "General")
+            new Claim("role", "admin"),
+            new Claim("permission","ReadAndWrite")
         };
 
 

@@ -5,6 +5,7 @@ using Sterling.Gateway.Data;
 using Sterling.Gateway.Application;
 using Sterling.Gateway.Api;
 using System.Threading.RateLimiting;
+using Sterling.Gateway.Domain;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,26 +22,37 @@ builder.Services.AddApplicationRegistration(builder.Configuration);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-builder.Configuration.AddJsonFile("Yarp.json", optional: false, reloadOnChange: true);
-
-builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
-
-builder.Services.AddRateLimiter(rateLimiterOptions =>
+builder.Services.Configure<AESSettings>(builder.Configuration.GetSection("AESSettings"));
+builder.Services.AddCors(options =>
 {
-    rateLimiterOptions.AddFixedWindowLimiter("fixed", options =>
+    options.AddPolicy("customPolicy", b =>
     {
-        options.Window = TimeSpan.FromSeconds(10);
-        options.PermitLimit = 5;
-        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        options.QueueLimit = 2;
+        b.AllowAnyHeader()
+            .AllowAnyMethod().AllowAnyOrigin();
+    });
+});
+
+// builder.Configuration.AddJsonFile("Yarp.json", optional: false, reloadOnChange: true);
+
+// builder.Services.AddReverseProxy()
+//     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("fixed", opt =>
+    {
+        opt.PermitLimit = 4;
+        opt.Window = TimeSpan.FromSeconds(12);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 2;
     });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Exception middleware should be one of the first middlewares in the pipeline
+app.UseExceptionMiddleware();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -50,32 +62,53 @@ if (app.Environment.IsDevelopment())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// app.UseHttpsRedirection();
+// CORS should be configured early in the pipeline, before other middlewares
+app.UseCors();
+
+// HTTPS redirection should be one of the first middlewares for security
+app.UseHttpsRedirection();
+
+// Authentication and Authorization middlewares
+// app.MapIdentityApi<GatewayApplication>();
+// app.UseAuthentication();
+// app.UseAuthorization();
+
+// Middleware for handling profile endpoints
 
 
+// Rate Limiter Middleware
+app.UseRateLimiter();
+
+
+
+// AES Encryption Middleware
+app.UseMiddleware<AesEncryptionMiddleware>();
+
+// Reverse Proxy Middleware
+app.MapReverseProxy();
 
 app.UseProfileEndpoints();
 
-using var scope = app.Services.CreateScope();
-var services = scope.ServiceProvider;
-
-try
+// Database Migrations
+using (var scope = app.Services.CreateScope())
 {
-    var context = services.GetRequiredService<ApplicationDbContext>();
-    await context.Database.MigrateAsync();
+    var services = scope.ServiceProvider;
+
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        await context.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred during migration");
+    }
 }
-catch (Exception ex)
-{
-    var logger = services.GetRequiredService<ILogger<Program>>();
-    logger.LogError(ex, "An error occured during migration");
-}
 
-app.UseRateLimiter();
-app.MapReverseProxy();
 
-app.UseAuthentication();
 
-app.UseAuthorization();
-
+// The final middleware to handle requests
 app.Run();
+
 
