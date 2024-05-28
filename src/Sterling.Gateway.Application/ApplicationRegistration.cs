@@ -58,7 +58,13 @@ public static class ApplicationRegistration
         {
             options.Configuration = configuration.GetConnectionString("RedisConnection");
         });
-        services.AddDbContext<ApplicationDbContext>(x => x.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        services.AddDbContext<ApplicationDbContext>(x => x.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),npgsqlOptions => {
+            npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorCodesToAdd: null);
+            npgsqlOptions.CommandTimeout(60);
+        }));
         services.AddIdentityCore<GatewayApplication>().AddEntityFrameworkStores<ApplicationDbContext>().AddApiEndpoints();
 
         services.AddHostedService<ConfigReloadService>();
