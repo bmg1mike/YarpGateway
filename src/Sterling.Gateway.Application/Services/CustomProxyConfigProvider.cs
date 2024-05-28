@@ -46,8 +46,12 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
                 return JsonConvert.DeserializeObject<CustomProxyConfig>(cachedConfig)!;
             }
 
-            var routes = await context.RouteConfigs.ToListAsync();
-            var clusters = await context.ClusterConfigs.ToListAsync();
+            var routes = await context.RouteConfigs
+                        .AsNoTracking()
+                        .ToListAsync();
+            var clusters = await context.ClusterConfigs
+                            .AsNoTracking()
+                            .ToListAsync();
 
             var routeConfigs = routes.Select(r => new RouteConfig
             {
