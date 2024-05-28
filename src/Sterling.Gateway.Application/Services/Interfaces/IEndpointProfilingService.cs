@@ -8,4 +8,5 @@ public interface IEndpointProfilingService
     Task<Result<List<GetMicroServiceDto>>> GetMicroServices();
     Task<Result<GetMicroServiceDto>> GetMicroserviceById(string id);
     Task<Result<string>> AddControllerToMicroservice(AddController request);
+    Task<Result<string>> AddEndpoint(AddEndpoint request);
 }

@@ -62,6 +62,12 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
                     // { "AuthorizationPolicy", r.AuthorizationPolicy },
                     { "AuthorizationPolicy", "AdminPolicy" }
                 },
+                Transforms = new List<Dictionary<string, string>>
+                {
+                    new Dictionary<string, string>{
+                        { "PathPattern", r.Path },
+                    }
+                },
                 RateLimiterPolicy = "fixed"
             }).ToList();
 

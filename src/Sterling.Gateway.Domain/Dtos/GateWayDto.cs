@@ -31,13 +31,13 @@ public record LoginResponse
 
 public record AddMicroServiceDto
 (
-    string ApplicationBaseUrl,
-    string ApplicationName,
-    bool isApiApended
+    string MicroserviceBaseUrl,
+    string MicroserviceName
 );
 
 public record GetMicroServiceDto
 (
+    string Id,
     string ApplicationName,
     string ApplicationBaseUrl
 );
@@ -46,4 +46,20 @@ public record AddController(
     string ControllerName,
     string MicroserviceId,
     bool isApiApended
+);
+
+public record AddEndpoint(
+    ApiType ApiType,
+    string SubUrl,
+    string MicroServiceId,
+    string RequestPayload,
+    string ResponsePayload
+);
+public record GetEndpoint(
+    string Id,
+    string ApiType,
+    string SubUrl,
+    string MicroServiceId,
+    string RequestPayload,
+    string ResponsePayload
 );
