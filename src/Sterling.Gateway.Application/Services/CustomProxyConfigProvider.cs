@@ -74,7 +74,7 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
             var clusterConfigs = clusters.GroupBy(c => c.ClusterId).Select(g => new ClusterConfig
             {
                 ClusterId = g.Key,
-                Destinations = g.ToDictionary(c => c.DestinationAddress, c => new DestinationConfig { Address = c.DestinationAddress })
+                Destinations = g.ToDictionary(c => c.ClusterId + "Api", c => new DestinationConfig { Address = c.DestinationAddress })
             }).ToList();
 
             var config = new CustomProxyConfig(routeConfigs, clusterConfigs);
