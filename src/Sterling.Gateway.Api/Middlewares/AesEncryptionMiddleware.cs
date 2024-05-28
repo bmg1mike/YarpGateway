@@ -51,6 +51,8 @@ public class AesEncryptionMiddleware
                     {
                         var encryptedData = dataElement.GetString();
                         var decryptedRequest = Decrypt(encryptedData);
+                            
+                        
                         var newBody = new MemoryStream(Encoding.UTF8.GetBytes(decryptedRequest));
                         context.Request.Body = newBody;
                         context.Request.ContentLength = newBody.Length;
@@ -58,7 +60,7 @@ public class AesEncryptionMiddleware
                     else
                     {
                         logger.LogError(requestBody);
-                        throw new Exception("int)HttpStatusCode.BadRequest");
+                        throw new Exception("Invalid request");
                     }
                 }
             }
@@ -102,38 +104,54 @@ public class AesEncryptionMiddleware
 
     private string Encrypt(string plainText)
     {
-        using (var aes = Aes.Create())
+        try
         {
-            aes.Key = _key;
-            aes.IV = _iv;
-
-            using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
-            using (var ms = new MemoryStream())
+            using (var aes = Aes.Create())
             {
-                using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
-                using (var sw = new StreamWriter(cs))
+                aes.Key = _key;
+                aes.IV = _iv;
+
+                using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
+                using (var ms = new MemoryStream())
                 {
-                    sw.Write(plainText);
+                    using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                    using (var sw = new StreamWriter(cs))
+                    {
+                        sw.Write(plainText);
+                    }
+                    return Convert.ToBase64String(ms.ToArray());
                 }
-                return Convert.ToBase64String(ms.ToArray());
             }
+        }
+        catch (System.Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            return string.Empty;
         }
     }
 
     private string Decrypt(string cipherText)
     {
-        using (var aes = Aes.Create())
+        try
         {
-            aes.Key = _key;
-            aes.IV = _iv;
-
-            using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
-            using (var ms = new MemoryStream(Convert.FromBase64String(cipherText)))
-            using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
-            using (var sr = new StreamReader(cs))
+            using (var aes = Aes.Create())
             {
-                return sr.ReadToEnd();
+                aes.Key = _key;
+                aes.IV = _iv;
+
+                using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                using (var ms = new MemoryStream(Convert.FromBase64String(cipherText)))
+                using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                using (var sr = new StreamReader(cs))
+                {
+                    return sr.ReadToEnd();
+                }
             }
+        }
+        catch (System.Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            return string.Empty;
         }
     }
 }
