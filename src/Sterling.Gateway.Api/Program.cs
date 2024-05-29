@@ -32,6 +32,10 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection"))
+    .AddRedis(builder.Configuration.GetConnectionString("RedisConnection"));
+
 // builder.Configuration.AddJsonFile("Yarp.json", optional: false, reloadOnChange: true);
 
 // builder.Services.AddReverseProxy()
@@ -75,7 +79,7 @@ app.UseHttpsRedirection();
 
 // Middleware for handling profile endpoints
 
-
+app.UseHealthChecks("/healthz");
 // Rate Limiter Middleware
 app.UseRateLimiter();
 
