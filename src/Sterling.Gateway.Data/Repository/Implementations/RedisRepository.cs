@@ -1,14 +1,17 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 
 namespace Sterling.Gateway.Data;
 
 public class RedisRepository : IRedisRepository
 {
     private readonly IDistributedCache redisCache;
+    private readonly ILogger<RedisRepository> logger;
 
-    public RedisRepository(IDistributedCache redisCache)
+    public RedisRepository(IDistributedCache redisCache, ILogger<RedisRepository> logger)
     {
         this.redisCache = redisCache;
+        this.logger = logger;
     }
 
     public async Task<string> Get(string key)
@@ -31,8 +34,8 @@ public class RedisRepository : IRedisRepository
         }
         catch (Exception ex)
         {
-
-            return null!;
+            logger.LogError(ex,ex.Message);
+            return string.Empty;
         }
     }
 
@@ -42,10 +45,9 @@ public class RedisRepository : IRedisRepository
         {
             await redisCache.RemoveAsync(key);
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
-            
-            throw;
+            logger.LogError(ex,ex.Message);
         }
     }
 }

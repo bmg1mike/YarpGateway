@@ -8,6 +8,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Yarp.ReverseProxy.Health;
 
 namespace Sterling.Gateway.Application;
 
@@ -35,7 +36,7 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
         try
         {
             using var scope = _serviceScopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            // var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var redis = scope.ServiceProvider.GetRequiredService<IRedisRepository>();
 
             var cacheKey = "YarpProxyConfig";
@@ -46,12 +47,24 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
                 return JsonConvert.DeserializeObject<CustomProxyConfig>(cachedConfig)!;
             }
 
-            var routes = await context.RouteConfigs
-                        .AsNoTracking()
-                        .ToListAsync();
-            var clusters = await context.ClusterConfigs
-                            .AsNoTracking()
-                            .ToListAsync();
+            var routesTask = Task.Run(async () =>
+               {
+                   using var routeScope = _serviceScopeFactory.CreateScope();
+                   var context = routeScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                   return await context.RouteConfigs.AsNoTracking().ToListAsync();
+               });
+
+            var clustersTask = Task.Run(async () =>
+            {
+                using var clusterScope = _serviceScopeFactory.CreateScope();
+                var context = clusterScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                return await context.ClusterConfigs.AsNoTracking().ToListAsync();
+            });
+
+            await Task.WhenAll(routesTask, clustersTask);
+
+            var routes = await routesTask;
+            var clusters = await clustersTask;
 
             var routeConfigs = routes.Select(r => new RouteConfig
             {
@@ -78,7 +91,24 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
             var clusterConfigs = clusters.GroupBy(c => c.ClusterId).Select(g => new ClusterConfig
             {
                 ClusterId = g.Key,
-                Destinations = g.ToDictionary(c => c.ClusterId + "Api", c => new DestinationConfig { Address = c.DestinationAddress })
+                Destinations = g.ToDictionary(c => c.ClusterId + "Api", c => new DestinationConfig { Address = c.DestinationAddress }),
+                HealthCheck = new HealthCheckConfig
+                {
+                    Active = new ActiveHealthCheckConfig
+                    {
+                        Enabled = true,
+                        Interval = TimeSpan.FromSeconds(10),
+                        Timeout = TimeSpan.FromSeconds(3),
+                        Path = "/health",
+                        Policy = HealthCheckConstants.ActivePolicy.ConsecutiveFailures
+                    },
+                    Passive = new PassiveHealthCheckConfig
+                    {
+                        Enabled = true,
+                        Policy = HealthCheckConstants.PassivePolicy.TransportFailureRate,
+                        ReactivationPeriod = TimeSpan.FromMinutes(5)
+                    }
+                }
             }).ToList();
 
             var config = new CustomProxyConfig(routeConfigs, clusterConfigs);
