@@ -165,6 +165,19 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
         }
     }
 
+    public async Task GetEndpoints()
+    {
+        try
+        {
+            
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            Result<string>.Failure("There was a problem, Please try again later");
+        }
+    }
+
 
     // Add Endpoints to Api
     // private void AddRoute(AddMicroServiceDto request, string controllerName = null!)
