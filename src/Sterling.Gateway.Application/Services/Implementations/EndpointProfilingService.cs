@@ -185,7 +185,7 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
             var count = await context.Endpoints.CountAsync();
             var totalPages = (int)Math.Ceiling(count / (double)pageSize);
             var endpoints = new List<GetEndpoint>();
-            var items = await context.Endpoints.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+            var items = await context.Endpoints.Include(x => x.MicroService).Skip((pageNumber - 1) * pageSize).Take(pageSize).AsNoTracking().ToListAsync();
 
             if (items.Count == 0)
             {
