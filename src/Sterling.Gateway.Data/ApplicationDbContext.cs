@@ -6,7 +6,6 @@ namespace Sterling.Gateway.Data;
 
 public class ApplicationDbContext : IdentityDbContext<GatewayApplication>
 {
-    public DbSet<MicroService> MicroServices { get; set; }
     public DbSet<RouteConfigEntity> RouteConfigs { get; set; }
     public DbSet<ClusterConfigEntity> ClusterConfigs { get; set; }
     public DbSet<Endpoint> Endpoints { get; set; }

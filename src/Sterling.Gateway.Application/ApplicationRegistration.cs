@@ -24,25 +24,36 @@ public static class ApplicationRegistration
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = key,
-                ValidateIssuer = false,
-                // ValidIssuer = "https://localhost:7087",
-                ValidAudience = "https://localhost:7087",
+                ValidateIssuer = true,
+                ValidIssuer = configuration["JwtConfig:Issuer"],
+                ValidAudience = configuration["JwtConfig:Issuer"],
                 ValidateAudience = false,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
             };
-            opt.Authority = "https://localhost:7087";
+            opt.Authority = configuration["JwtConfig:Issuer"];
         });
-       
+
         services.AddAuthorization(options =>
         {
+            options.AddPolicy("SuperAdminPolicy", policy =>
+                policy.RequireAssertion(x => x.User.HasClaim(claim => 
+                claim.Type =="Permission" &&
+                (claim.Value == "SuperAdmin"))));
+
             options.AddPolicy("AdminPolicy", policy =>
-                policy.RequireAssertion(context => context.User.HasClaim("role", "admin") && context.User.HasClaim("permission", "ReadAndWrite")));
+                policy.RequireAssertion(x => x.User.HasClaim(claim => 
+                claim.Type =="Permission" &&
+                (claim.Value == "SuperAdmin" || claim.Value == "Admin"))));
 
-            // options.AddPolicy("GeneralPolicy", policy =>
-            //     policy.RequireAssertion(context => context.User.HasClaim("permission", "ReadAndWrite")));
+            options.AddPolicy("GuestPolicy", policy =>
+            policy.RequireAssertion(context =>
+                context.User.HasClaim(claim =>
+                claim.Type == "Permission" &&
+                (claim.Value == "SuperAdmin" || claim.Value == "Admin" || claim.Value == "Guest"))
+    )
+);
 
-            // options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
         });
 
         services.AddSingleton<IProxyConfigProvider, CustomProxyConfigProvider>();
@@ -58,7 +69,8 @@ public static class ApplicationRegistration
         {
             options.Configuration = configuration.GetConnectionString("RedisConnection");
         });
-        services.AddDbContext<ApplicationDbContext>(x => x.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),npgsqlOptions => {
+        services.AddDbContext<ApplicationDbContext>(x => x.UseNpgsql(configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
+        {
             npgsqlOptions.EnableRetryOnFailure(
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(10),

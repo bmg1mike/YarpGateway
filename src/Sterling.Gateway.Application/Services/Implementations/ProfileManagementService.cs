@@ -20,7 +20,8 @@ public class ProfileManagementService(UserManager<GatewayApplication> userManage
             {
                 UserName = request.Email,
                 ApplicationName = request.ApplicationName,
-                Email = request.Email
+                Email = request.Email,
+                PermissionRole = request.Permission.ToString()
             };
 
             var checkUser = await userManager.FindByNameAsync(user.UserName);

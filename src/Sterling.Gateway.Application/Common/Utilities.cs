@@ -18,7 +18,7 @@ public static class Utilities
             new Claim(ClaimTypes.NameIdentifier,user.Id),
             new Claim(ClaimTypes.Email,user.Email!),
             new Claim("role", "admin"),
-            new Claim("permission","ReadAndWrite")
+            new Claim("Permission",user.PermissionRole)
         };
 
 
@@ -28,8 +28,8 @@ public static class Utilities
 
         var tokenOptions = new JwtSecurityToken
         (
-            issuer: _config["JwtConfig:Issuer"],
-            audience: null,
+            issuer: _config["JwtConfig:Issuer"], 
+            audience: _config["JwtConfig:Audience"],
             claims: claims,
             expires: DateTime.Now.AddMinutes(5),
             signingCredentials: creds

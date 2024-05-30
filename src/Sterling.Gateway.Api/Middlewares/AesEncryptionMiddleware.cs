@@ -41,26 +41,42 @@ public class AesEncryptionMiddleware
             {
                 // Decrypt the request body
                 context.Request.EnableBuffering();
-                var requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync();
-                context.Request.Body.Position = 0;
+                var requestBody = string.Empty;
+                try
+                {
+                    requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync();
+                    context.Request.Body.Position = 0;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error reading request body");
+                    throw new Exception("Error reading request body");
+                }
 
                 if (!string.IsNullOrWhiteSpace(requestBody))
                 {
-                    var requestJson = JsonDocument.Parse(requestBody);
-                    if (requestJson.RootElement.TryGetProperty("request", out JsonElement dataElement))
+                    try
                     {
-                        var encryptedData = dataElement.GetString();
-                        var decryptedRequest = Decrypt(encryptedData);
-                            
-                        
-                        var newBody = new MemoryStream(Encoding.UTF8.GetBytes(decryptedRequest));
-                        context.Request.Body = newBody;
-                        context.Request.ContentLength = newBody.Length;
+                        var requestJson = JsonDocument.Parse(requestBody);
+                        if (requestJson.RootElement.TryGetProperty("request", out JsonElement dataElement))
+                        {
+                            var encryptedData = dataElement.GetString();
+                            var decryptedRequest = Decrypt(encryptedData);
+
+                            var newBody = new MemoryStream(Encoding.UTF8.GetBytes(decryptedRequest));
+                            context.Request.Body = newBody;
+                            context.Request.ContentLength = newBody.Length;
+                        }
+                        else
+                        {
+                            logger.LogError("Invalid request format: {RequestBody}", requestBody);
+                            throw new Exception($"Invalid request format: {requestBody}");
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        logger.LogError(requestBody);
-                        throw new Exception("Invalid request");
+                        logger.LogError(ex, "Error processing request body");
+                        throw new Exception("Error processing request body");
                     }
                 }
             }
@@ -74,29 +90,39 @@ public class AesEncryptionMiddleware
                 await _next(context);
 
                 context.Response.Body.Seek(0, SeekOrigin.Begin);
-                var responseBodyText = await new StreamReader(context.Response.Body).ReadToEndAsync();
-                context.Response.Body.Seek(0, SeekOrigin.Begin);
+                var responseBodyText = string.Empty;
+                try
+                {
+                    responseBodyText = await new StreamReader(context.Response.Body).ReadToEndAsync();
+                    context.Response.Body.Seek(0, SeekOrigin.Begin);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error reading response body");
+                    throw new Exception("Error reading response body");
+                }
 
                 // Encrypt the response body
-                var encryptedResponse = Encrypt(responseBodyText);
-                var jsonResponse = JsonSerializer.Serialize(new { response = encryptedResponse });
-                var encryptedResponseBytes = Encoding.UTF8.GetBytes(jsonResponse);
-                context.Response.Body = originalResponseBodyStream;
-                context.Response.ContentLength = encryptedResponseBytes.Length;
-                context.Response.ContentType = "application/json";
-                await context.Response.Body.WriteAsync(encryptedResponseBytes, 0, encryptedResponseBytes.Length);
+                try
+                {
+                    var encryptedResponse = Encrypt(responseBodyText);
+                    var jsonResponse = JsonSerializer.Serialize(new { response = encryptedResponse });
+                    var encryptedResponseBytes = Encoding.UTF8.GetBytes(jsonResponse);
+                    context.Response.Body = originalResponseBodyStream;
+                    context.Response.ContentLength = encryptedResponseBytes.Length;
+                    context.Response.ContentType = "application/json";
+                    await context.Response.Body.WriteAsync(encryptedResponseBytes, 0, encryptedResponseBytes.Length);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error encrypting response body");
+                    throw new Exception("Error encrypting response body");
+                }
             }
         }
         catch (Exception ex)
         {
-            if (ex.InnerException != null)
-            {
-                logger.LogError("{ExceptionType} {ExceptionMessage}", ex.InnerException.GetType().ToString(), ex.InnerException.Message);
-            }
-            else
-            {
-                logger.LogError("{ExceptionType} {ExceptionMessage}", ex.GetType().ToString(), ex.Message);
-            }
+            logger.LogError(ex, "Error in middleware processing");
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             await context.Response.WriteAsync("An Error occurred, please try again later.");
         }
@@ -123,9 +149,9 @@ public class AesEncryptionMiddleware
                 }
             }
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
-            logger.LogError(ex, ex.Message);
+            logger.LogError(ex, "Error encrypting data");
             return string.Empty;
         }
     }
@@ -148,9 +174,9 @@ public class AesEncryptionMiddleware
                 }
             }
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
-            logger.LogError(ex, ex.Message);
+            logger.LogError(ex, "Error decrypting data");
             return string.Empty;
         }
     }
