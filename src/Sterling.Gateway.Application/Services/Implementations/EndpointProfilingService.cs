@@ -14,6 +14,11 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
     {
         try
         {
+            var clusterInDb = await context.ClusterConfigs.Where(x => x.ClusterId == request.MicroserviceName.ToLower().Trim()).AsNoTracking().FirstOrDefaultAsync();
+            if (clusterInDb != null)
+            {
+                return Result<string>.Failure("Microservice already exist");
+            }
 
             var cluster = new ClusterConfigEntity
             {
@@ -100,6 +105,13 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
             if (cluster == null)
             {
                 return Result<string>.Failure("Invalid Microservice");
+            }
+
+            var routeInDb = await context.RouteConfigs.Where(x => x.RouteId == $"{cluster.ClusterId.ToLower().Trim()}_{request.ControllerName.ToLower().Trim()}").AsNoTracking().FirstOrDefaultAsync();
+
+            if (routeInDb != null)
+            {
+                return Result<string>.Failure("Controller already exist");
             }
 
             var route = new RouteConfigEntity
