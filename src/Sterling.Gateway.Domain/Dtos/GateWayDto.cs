@@ -63,6 +63,8 @@ public record GetEndpoint(
     string ApiType,
     string SubUrl,
     string MicroServiceId,
+    string CallHeader,
+    string CallHeaderValue,
     string RequestPayload,
     string ResponsePayload
 );

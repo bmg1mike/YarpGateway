@@ -165,18 +165,22 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
         }
     }
 
-    public async Task GetEndpoints()
-    {
-        try
-        {
+    // public async Task<Result<PaginatedList<GetEndpoint>>> GetEndpoints(int pageSize,int pageNumber)
+    // {
+    //     try
+    //     {
+    //         var query = context.Endpoints.AsQueryable();
+    //         // var endpoints = await PaginatedList<Endpoint>.CreateAsync(query,pageNumber,pageSize);
+    //         var count = await context.Endpoints.CountAsync();
+    //         var items = await context.Endpoints.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
             
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, ex.Message);
-            Result<string>.Failure("There was a problem, Please try again later");
-        }
-    }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         logger.LogError(ex, ex.Message);
+    //         Result<string>.Failure("There was a problem, Please try again later");
+    //     }
+    // }
 
 
     // Add Endpoints to Api
