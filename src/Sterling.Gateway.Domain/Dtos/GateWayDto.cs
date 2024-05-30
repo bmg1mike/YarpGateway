@@ -68,3 +68,17 @@ public record GetEndpoint(
     string RequestPayload,
     string ResponsePayload
 );
+
+public record GetEndpointList(
+    List<GetEndpoint> Endpoints,
+    int TotalCount,
+    int TotalPages,
+    int PageSize,
+    int CurrentPage
+);
+
+public class PaginatedListRequest
+{
+    public int PageSize { get; set; } = 10; // default value
+    public int PageNumber { get; set; } = 1; // default value
+}

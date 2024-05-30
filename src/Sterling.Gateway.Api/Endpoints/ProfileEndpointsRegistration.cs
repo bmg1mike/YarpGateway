@@ -1,4 +1,5 @@
-﻿using Sterling.Gateway.Application;
+﻿using Microsoft.AspNetCore.Mvc;
+using Sterling.Gateway.Application;
 using Sterling.Gateway.Domain;
 
 namespace Sterling.Gateway.Api;
@@ -43,6 +44,16 @@ public static class ProfileEndpointsRegistration
         {
             return Results.Ok(await service.AddEndpoint(request));
         }).RequireAuthorization("AdminPolicy");
+
+        group.MapPost("/GetEndpoints", async (PaginatedListRequest request, IEndpointProfilingService service) =>
+        {
+            return Results.Ok(await service.GetEndpoints(request.PageSize, request.PageNumber));
+        }).RequireAuthorization("GuestPolicy"); ;
+
+        group.MapGet("/GetEndpointsById/{id}", async (string id, IEndpointProfilingService service) =>
+        {
+            return Results.Ok(await service.GetEndpointById(id));
+        }).RequireAuthorization("GuestPolicy"); ;
 
         return group;
     }

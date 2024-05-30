@@ -126,6 +126,7 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
         }
     }
 
+
     public async Task<Result<string>> AddEndpoint(AddEndpoint request)
     {
 
@@ -165,101 +166,73 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
         }
     }
 
-    // public async Task<Result<PaginatedList<GetEndpoint>>> GetEndpoints(int pageSize,int pageNumber)
-    // {
-    //     try
-    //     {
-    //         var query = context.Endpoints.AsQueryable();
-    //         // var endpoints = await PaginatedList<Endpoint>.CreateAsync(query,pageNumber,pageSize);
-    //         var count = await context.Endpoints.CountAsync();
-    //         var items = await context.Endpoints.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
-            
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         logger.LogError(ex, ex.Message);
-    //         Result<string>.Failure("There was a problem, Please try again later");
-    //     }
-    // }
+    public async Task<Result<GetEndpointList>> GetEndpoints(int pageSize = 10, int pageNumber = 1)
+    {
+        try
+        {
+            var count = await context.Endpoints.CountAsync();
+            var totalPages = (int)Math.Ceiling(count / (double)pageSize);
+            var endpoints = new List<GetEndpoint>();
+            var items = await context.Endpoints.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            if (items.Count == 0)
+            {
+                return Result<GetEndpointList>.Failure("There are no endpoints at the moment");
+            }
 
 
-    // Add Endpoints to Api
-    // private void AddRoute(AddMicroServiceDto request, string controllerName = null!)
-    // {
-    //     string jsonFilePath = $"{Directory.GetCurrentDirectory()}/Yarp.json";
-    //     string jsonText = File.ReadAllText(jsonFilePath);
+            foreach (var item in items)
+            {
+                endpoints.Add(new GetEndpoint(
+                    item.Id,
+                    item.ApiType.ToString(),
+                    item.SubUrl,
+                    item.MicroServiceId,
+                    "X-Cluster",
+                    item.MicroService!.ClusterId,
+                    item.RequestPayload!,
+                    item.ResponsePayload
+                ));
+            }
 
-    //     string appendApi = request.isApiApended ? "/api" : string.Empty;
-    //     string patternApiAppended = request.isApiApended ? "api/" : string.Empty;
+            var listOfEndpoints = new GetEndpointList(endpoints, count, totalPages, pageSize, pageNumber);
 
-    //     string pathName = request.ApplicationName;
+            return Result<GetEndpointList>.Success(listOfEndpoints);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            return Result<GetEndpointList>.Failure("There was a problem, Please try again later");
+        }
+    }
 
-    //     if (!string.IsNullOrEmpty(controllerName))
-    //     {
-    //         pathName = controllerName;
-    //     }
+    public async Task<Result<GetEndpoint>> GetEndpointById(string id)
+    {
+        try
+        {
+            var endpointInDb = await context.Endpoints.Include(x => x.MicroService).FirstOrDefaultAsync(x => x.Id == id);
+            if (endpointInDb == null)
+            {
+                return Result<GetEndpoint>.Failure("Endpoint does not exist");
+            }
+            var endpoint = new GetEndpoint(
+                    endpointInDb.Id,
+                    endpointInDb.ApiType.ToString(),
+                    endpointInDb.SubUrl,
+                    endpointInDb.MicroServiceId,
+                    "X-Cluster",
+                    endpointInDb.MicroService!.ClusterId,
+                    endpointInDb.RequestPayload!,
+                    endpointInDb.ResponsePayload
+            );
 
-    //     // Parse the JSON into a JsonObject
-    //     JsonObject jsonObject = JsonNode.Parse(jsonText)!.AsObject();
+            return Result<GetEndpoint>.Success(endpoint);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            return Result<GetEndpoint>.Failure("There was a problem, Please try again later");
+        }
+    }
 
-    //     // New value for the "Routes" key
-    //     string newRouteJson = @$"
-    //     {{
-    //       ""ClusterId"": ""{request.ApplicationName.ToLower()}"",
-    //       ""RateLimiterPolicy"": ""fixed"",
-    //       ""Match"": {{
-    //         ""Path"": ""{appendApi}/{pathName.ToLower()}/{{**catch-all}}""
-    //       }},
-    //       ""Transforms"": [
-    //         {{
-    //           ""PathPattern"": ""{patternApiAppended}{pathName.ToLower()}/{{**catch-all}}""
-    //         }}
-    //       ]
-    //     }}";
-    //     JsonObject newRouteObject = JsonNode.Parse(newRouteJson)!.AsObject();
-
-    //     // Get the existing "Routes" object
-    //     JsonObject routesObject = jsonObject["ReverseProxy"]!["Routes"]!.AsObject();
-
-    //     // Add the new route to the "Routes" object with a new key
-    //     routesObject.Add(pathName, newRouteObject);
-
-    //     // Serialize the modified JsonObject back to a JSON string
-    //     string modifiedJsonText = jsonObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-
-    //     // Save the modified JSON back to the file
-    //     File.WriteAllText(jsonFilePath, modifiedJsonText);
-    // }
-    // private void AddCluster(AddMicroServiceDto request)
-    // {
-    //     string jsonFilePath = $"{Directory.GetCurrentDirectory()}/Yarp.json";
-    //     string jsonText = File.ReadAllText(jsonFilePath);
-
-    //     // Parse the JSON into a JsonObject
-    //     JsonObject jsonObject = JsonNode.Parse(jsonText)!.AsObject();
-
-    //     // New value for the "Routes" key
-    //     string newClusterJson = @$"
-    //     {{
-    //             ""Destinations"": {{
-    //                 ""{request.ApplicationName.ToLower()}Api"": {{
-    //                     ""Address"": ""{request.ApplicationBaseUrl}""
-    //                 }}
-    //             }}
-            
-    //     }}";
-    //     JsonObject newClusterObject = JsonNode.Parse(newClusterJson)!.AsObject();
-
-    //     // Get the existing "Routes" object
-    //     JsonObject routesObject = jsonObject["ReverseProxy"]!["Clusters"]!.AsObject();
-
-    //     // Add the new route to the "Routes" object with a new key
-    //     routesObject.Add(request.ApplicationName.ToLower(), newClusterObject);
-
-    //     // Serialize the modified JsonObject back to a JSON string
-    //     string modifiedJsonText = jsonObject.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-
-    //     // Save the modified JSON back to the file
-    //     File.WriteAllText(jsonFilePath, modifiedJsonText);
-    // }
 }
