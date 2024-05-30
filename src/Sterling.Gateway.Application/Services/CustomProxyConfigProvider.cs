@@ -85,7 +85,8 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
                         { "PathPattern", r.Path },
                     }
                 },
-                RateLimiterPolicy = "fixed"
+                RateLimiterPolicy = "fixed",
+                AuthorizationPolicy = r.AuthorizationPolicy
             }).ToList();
 
             var clusterConfigs = clusters.GroupBy(c => c.ClusterId).Select(g => new ClusterConfig

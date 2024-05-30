@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-
 namespace Sterling.Gateway.Domain;
 
 public record RegisterDto
@@ -11,7 +10,10 @@ public record RegisterDto
     string Password,
 
     [Required]
-    string ApplicationName
+    string ApplicationName,
+
+    [Required]
+    Permission Permission
 );
 
 public record LoginDto
@@ -45,6 +47,7 @@ public record GetMicroServiceDto
 public record AddController(
     string ControllerName,
     string MicroserviceId,
+    Permission Permission,
     bool isApiApended
 );
 

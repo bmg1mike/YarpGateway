@@ -14,8 +14,6 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
     {
         try
         {
-            // AddRoute(request);
-            // AddCluster(request);
 
             var cluster = new ClusterConfigEntity
             {
@@ -108,8 +106,8 @@ public class EndpointProfilingService(ApplicationDbContext context, ILogger<Endp
             {
                 ClusterId = cluster.ClusterId,
                 Path = $"{appendApi}/{request.ControllerName.ToLower()}/{{**catch-all}}",
-                RouteId = request.ControllerName.ToLower().Trim(),
-                AuthorizationPolicy = "GeneralService",
+                RouteId = $"{cluster.ClusterId.ToLower().Trim()}_{request.ControllerName.ToLower().Trim()}",
+                AuthorizationPolicy = $"{request.Permission.ToString()}Policy",
                 MicroServiceId = cluster.Id
             };
             await context.RouteConfigs.AddAsync(route);
