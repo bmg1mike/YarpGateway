@@ -31,7 +31,7 @@ public static class Utilities
             issuer: _config["JwtConfig:Issuer"], 
             audience: _config["JwtConfig:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddMinutes(5),
+            expires: DateTime.Now.AddMinutes(Convert.ToInt16(_config["JwtConfig:ExpirationTime"])),
             signingCredentials: creds
         );
 
