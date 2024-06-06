@@ -96,7 +96,7 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 // CORS should be configured early in the pipeline, before other middlewares
-app.UseCors();
+app.UseCors("customPolicy");
 
 // HTTPS redirection should be one of the first middlewares for security
 app.UseHttpsRedirection();
