@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Yarp.ReverseProxy.Health;
+using Microsoft.Extensions.Configuration;
 
 namespace Sterling.Gateway.Application;
 
@@ -18,15 +19,17 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
     private CancellationChangeToken _changeToken;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<CustomProxyConfigProvider> logger;
+    private readonly IConfiguration configuration;
 
-    public CustomProxyConfigProvider(IServiceScopeFactory serviceScopeFactory, ILogger<CustomProxyConfigProvider> logger)
+    public CustomProxyConfigProvider(IServiceScopeFactory serviceScopeFactory, ILogger<CustomProxyConfigProvider> logger, IConfiguration configuration)
     {
         // Load initial configuration
         this.logger = logger;
+        this.configuration = configuration;
         _serviceScopeFactory = serviceScopeFactory;
         _config = LoadConfig().Result;
         _changeToken = new CancellationChangeToken(new CancellationToken(false));
-
+        
     }
 
     public IProxyConfig GetConfig() => _config;
@@ -41,7 +44,7 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
 
             var cacheKey = "YarpProxyConfig";
             var cachedConfig = await redis.Get(cacheKey);//_cache.GetStringAsync(cacheKey);
-            //await redis.Delete(cacheKey);
+            // await redis.Delete(cacheKey);
             if (cachedConfig != null)
             {
                 return JsonConvert.DeserializeObject<CustomProxyConfig>(cachedConfig)!;
@@ -86,8 +89,7 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
                     }
                 },
                 RateLimiterPolicy = "fixed",
-                AuthorizationPolicy = r.AuthorizationPolicy,
-                Timeout = TimeSpan.FromHours(1)
+                AuthorizationPolicy = r.AuthorizationPolicy
             }).ToList();
 
             var clusterConfigs = clusters.GroupBy(c => c.ClusterId).Select(g => new ClusterConfig
@@ -110,6 +112,10 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
                         Policy = HealthCheckConstants.PassivePolicy.TransportFailureRate,
                         ReactivationPeriod = TimeSpan.FromMinutes(5)
                     }
+                },
+                HttpRequest = new Yarp.ReverseProxy.Forwarder.ForwarderRequestConfig
+                {
+                    ActivityTimeout =   TimeSpan.FromSeconds(Convert.ToInt64(configuration["GatewayTimeoutInSeconds"]))
                 }
             }).ToList();
 

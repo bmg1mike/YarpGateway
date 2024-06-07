@@ -81,6 +81,11 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// builder.Services.AddRequestTimeouts(options =>
+// {
+//     options.AddPolicy("timeOutPolicy", TimeSpan.FromSeconds(Convert.ToInt64(builder.Configuration[""])));
+// });
+
 var app = builder.Build();
 
 // Exception middleware should be one of the first middlewares in the pipeline
@@ -116,6 +121,8 @@ app.UseRateLimiter();
 
 // AES Encryption Middleware
 app.UseMiddleware<AesEncryptionMiddleware>();
+
+// app.UseRequestTimeouts();
 
 // Reverse Proxy Middleware
 app.MapReverseProxy();
