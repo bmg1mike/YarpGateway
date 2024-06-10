@@ -29,7 +29,7 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
         _serviceScopeFactory = serviceScopeFactory;
         _config = LoadConfig().Result;
         _changeToken = new CancellationChangeToken(new CancellationToken(false));
-        
+
     }
 
     public IProxyConfig GetConfig() => _config;
@@ -115,7 +115,7 @@ public class CustomProxyConfigProvider : IProxyConfigProvider
                 },
                 HttpRequest = new Yarp.ReverseProxy.Forwarder.ForwarderRequestConfig
                 {
-                    ActivityTimeout =   TimeSpan.FromSeconds(Convert.ToInt64(configuration["GatewayTimeoutInSeconds"]))
+                    ActivityTimeout = TimeSpan.FromSeconds(Convert.ToInt64(configuration["GatewayTimeoutInSeconds"]))
                 }
             }).ToList();
 
